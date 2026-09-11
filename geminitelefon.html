@@ -1,0 +1,819 @@
+html_code = """<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Functional iOS Simulator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background: #08080a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        /* Container & Responsive PC Scaling */
+        .iphone-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-height: 98vh;
+        }
+
+        .iphone {
+            width: 385px;
+            height: 780px;
+            background: #1c1c1e;
+            border-radius: 54px;
+            position: relative;
+            box-shadow: 
+                0 0 0 10px #3a3a3c,
+                0 0 0 12px #2c2c2e,
+                0 30px 80px rgba(0, 0, 0, 0.95),
+                inset 0 0 8px rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            transform: scale(0.92);
+            transform-origin: center center;
+        }
+
+        @media (max-height: 820px) {
+            .iphone { transform: scale(0.82); }
+        }
+
+        @media (max-height: 700px) {
+            .iphone { transform: scale(0.70); }
+        }
+
+        /* Physical Buttons */
+        .power-btn {
+            position: absolute;
+            right: -15px;
+            top: 200px;
+            width: 4px;
+            height: 85px;
+            background: #3a3a3c;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .power-btn:hover { background: #555; }
+
+        .volume-up, .volume-down {
+            position: absolute;
+            left: -15px;
+            width: 4px;
+            height: 52px;
+            background: #3a3a3c;
+            border-radius: 4px 0 0 4px;
+        }
+        .volume-up { top: 170px; }
+        .volume-down { top: 235px; }
+
+        /* Main Screen Wallpaper & Style matching user image */
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop') center/cover;
+            border-radius: 44px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: opacity 0.25s ease, filter 0.25s ease;
+        }
+
+        .screen.off {
+            opacity: 0.02;
+            filter: brightness(0);
+            pointer-events: none;
+        }
+
+        .reflection {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(120deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 35%, transparent 35%);
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Dynamic Island & Privacy Dot */
+        .dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 115px;
+            height: 32px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .camera-hole {
+            width: 12px;
+            height: 12px;
+            background: #111;
+            border-radius: 50%;
+            box-shadow: inset 0 0 3px #3b5998;
+        }
+
+        .camera-indicator {
+            width: 7px;
+            height: 7px;
+            background-color: #34c759;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .camera-indicator.active {
+            opacity: 1;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 40;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* HomeScreen Apps Layout matching user image */
+        .home-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            padding-bottom: 12px;
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px 12px;
+            padding: 20px 16px;
+            margin-top: 10px;
+            z-index: 10;
+        }
+
+        .app-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .app-icon:active { transform: scale(0.88); }
+
+        /* White rounded square icon style matching user provided image */
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .app-name {
+            color: #ffffff;
+            font-size: 12px;
+            margin-top: 6px;
+            font-weight: 500;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+
+        /* Dock Bar matching user image */
+        .dock-container {
+            padding: 0 14px;
+            z-index: 10;
+        }
+
+        .dock {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 32px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        /* Fullscreen Apps */
+        .app-window {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border-radius: 44px;
+            overflow: hidden;
+            padding-top: 48px;
+        }
+
+        .app-window.active {
+            transform: translateY(0);
+        }
+
+        /* CAMERA APP */
+        .camera-view {
+            flex: 1;
+            background: #111;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-controls {
+            height: 110px;
+            background: #000;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .shutter-btn {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .shutter-btn-inner {
+            width: 52px;
+            height: 52px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.1s;
+        }
+
+        .shutter-btn:active .shutter-btn-inner {
+            transform: scale(0.88);
+        }
+
+        .gallery-preview-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #222;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #444;
+            cursor: pointer;
+        }
+
+        /* PHOTOS GALLERY APP */
+        .photos-app {
+            background: #fff;
+            color: #000;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .photos-app h2 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            background: #eee;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* SAFARI APP */
+        .safari-app {
+            background: #f2f2f7;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .safari-bar {
+            padding: 10px 15px;
+            background: #e5e5ea;
+            display: flex;
+            gap: 8px;
+        }
+
+        .safari-input {
+            flex: 1;
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: none;
+            background: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .safari-content {
+            flex: 1;
+            border: none;
+            background: #fff;
+        }
+
+        /* MESSAGES APP */
+        .messages-app {
+            background: #fff;
+            color: #000;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .chat-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .bubble {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 14px;
+        }
+
+        .bubble.received {
+            background: #e9e9eb;
+            color: #000;
+            align-self: flex-start;
+        }
+
+        .bubble.sent {
+            background: #007aff;
+            color: #fff;
+            align-self: flex-end;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            outline: none;
+        }
+
+        .send-btn {
+            background: #34c759;
+            color: white;
+            border: none;
+            padding: 0 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* MUSIC APP */
+        .music-app {
+            background: linear-gradient(180deg, #300a14 0%, #000000 100%);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .album-art {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, #ff2d55, #5856d6);
+            border-radius: 16px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            box-shadow: 0 10px 30px rgba(255, 45, 85, 0.4);
+        }
+
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #fff;
+            color: #000;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* MAPS APP */
+        .maps-app {
+            flex: 1;
+            background: #e5e3df;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Home Indicator Bar */
+        .home-bar-container {
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 70;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .home-bar {
+            width: 130px;
+            height: 5px;
+            background: #ffffff;
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+
+        .app-window.active ~ .home-bar-container .home-bar {
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="iphone-container">
+        <div class="iphone">
+            <div class="power-btn" onclick="togglePower()" title="Ekranı Aç/Kapat"></div>
+            <div class="volume-up"></div>
+            <div class="volume-down"></div>
+
+            <div class="screen" id="screen">
+                <div class="reflection"></div>
+
+                <!-- Dynamic Island -->
+                <div class="dynamic-island">
+                    <div class="camera-hole"></div>
+                    <div class="camera-indicator" id="cameraIndicator" title="Kamera Kullanımda"></div>
+                </div>
+
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <span id="time">12:00</span>
+                    <span style="font-size: 12px; letter-spacing: 1px;">5G 🔋</span>
+                </div>
+
+                <!-- Home Screen Content -->
+                <div class="home-content">
+                    <!-- App Grid Matching User Image Icons -->
+                    <div class="app-grid">
+                        <div class="app-icon" onclick="openApp('messages')">
+                            <div class="icon-box">📞</div>
+                            <span class="app-name">Telefon</span>
+                        </div>
+                        <div class="app-icon" onclick="openApp('messages')">
+                            <div class="icon-box">💬</div>
+                            <span class="app-name">Mesajlar</span>
+                        </div>
+                        <div class="app-icon" onclick="openApp('camera')">
+                            <div class="icon-box">📷</div>
+                            <span class="app-name">Kamera</span>
+                        </div>
+                        <div class="app-icon" onclick="openApp('photos')">
+                            <div class="icon-box">🖼️</div>
+                            <span class="app-name">Fotoğraflar</span>
+                        </div>
+
+                        <div class="app-icon" onclick="openApp('messages')">
+                            <div class="icon-box">✉️</div>
+                            <span class="app-name">Mail</span>
+                        </div>
+                        <div class="app-icon" onclick="openApp('music')">
+                            <div class="icon-box">🎵</div>
+                            <span class="app-name">Müzik</span>
+                        </div>
+                        <div class="app-icon" onclick="openApp('maps')">
+                            <div class="icon-box">🗺️</div>
+                            <span class="app-name">Haritalar</span>
+                        </div>
+                        <div class="app-icon" onclick="openApp('safari')">
+                            <div class="icon-box">⚙️</div>
+                            <span class="app-name">Ayarlar</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Dock Bar Matching User Image Icons -->
+                    <div class="dock-container">
+                        <div class="dock">
+                            <div class="app-icon" onclick="openApp('messages')">
+                                <div class="icon-box">📞</div>
+                            </div>
+                            <div class="app-icon" onclick="openApp('messages')">
+                                <div class="icon-box">💬</div>
+                            </div>
+                            <div class="app-icon" onclick="openApp('safari')">
+                                <div class="icon-box">🌐</div>
+                            </div>
+                            <div class="app-icon" onclick="openApp('music')">
+                                <div class="icon-box">🎵</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAMERA APP -->
+                <div class="app-window" id="app-camera">
+                    <div class="camera-view">
+                        <video id="webcam" autoplay playsinline muted></video>
+                    </div>
+                    <div class="camera-controls">
+                        <div class="gallery-preview-btn" id="camGalleryPreview" onclick="openApp('photos')"></div>
+                        <button class="shutter-btn" onclick="takePhoto()">
+                            <div class="shutter-btn-inner"></div>
+                        </button>
+                        <div style="width: 48px;"></div>
+                    </div>
+                </div>
+
+                <!-- PHOTOS APP -->
+                <div class="app-window" id="app-photos">
+                    <div class="photos-app">
+                        <h2>Fotoğraflar</h2>
+                        <div class="gallery-grid" id="galleryGrid">
+                            <!-- Captured Photos Injected Here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SAFARI APP -->
+                <div class="app-window" id="app-safari">
+                    <div class="safari-app">
+                        <div class="safari-bar">
+                            <input type="text" class="safari-input" id="safariUrl" value="https://wikipedia.org" placeholder="Web adresi girin...">
+                            <button onclick="loadWebpage()" style="padding: 0 10px; border-radius: 8px; border:none; background:#007aff; color:#fff;">Git</button>
+                        </div>
+                        <iframe class="safari-content" id="safariFrame" src="https://wikipedia.org"></iframe>
+                    </div>
+                </div>
+
+                <!-- MESSAGES APP -->
+                <div class="app-window" id="app-messages">
+                    <div class="messages-app">
+                        <h3 style="margin-bottom: 10px;">Mesajlar</h3>
+                        <div class="chat-box" id="chatBox">
+                            <div class="bubble received">Merhaba Uras! iOS simülasyonuna hoş geldin.</div>
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" class="chat-input" id="chatInput" placeholder="Mesaj yazın...">
+                            <button class="send-btn" onclick="sendMessage()">Gönder</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MUSIC APP -->
+                <div class="app-window" id="app-music">
+                    <div class="music-app">
+                        <div class="album-art">🎧</div>
+                        <h2>Çalan Şarkı</h2>
+                        <p style="color: #aaa; margin-top: 5px;">Sanal Çalma Listesi</p>
+                        <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+                    </div>
+                </div>
+
+                <!-- MAPS APP -->
+                <div class="app-window" id="app-maps">
+                    <div class="maps-app">
+                        <iframe src="https://www.openstreetmap.org/export/embed.html?bbox=28.8,40.9,29.1,41.1&layer=mapnik" style="width:100%; height:100%; border:none;"></iframe>
+                    </div>
+                </div>
+
+                <!-- Home Bar Indicator -->
+                <div class="home-bar-container" onclick="closeAllApps()" title="Ana Ekrana Dön">
+                    <div class="home-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for Photo Capture -->
+    <canvas id="photoCanvas" style="display: none;"></canvas>
+
+    <script>
+        let mediaStream = null;
+        let photos = [];
+
+        // Real-time Clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('time').textContent = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Power Button Toggle
+        function togglePower() {
+            const screen = document.getElementById('screen');
+            screen.classList.toggle('off');
+            if (screen.classList.contains('off')) {
+                stopCamera();
+            }
+        }
+
+        // Open Selected App
+        function openApp(appName) {
+            closeAllApps(false); 
+            
+            const appElement = document.getElementById(`app-${appName}`);
+            if (appElement) {
+                appElement.classList.add('active');
+            }
+
+            if (appName === 'camera') {
+                startCamera();
+            } else {
+                stopCamera(); // Stops camera stream and revokes camera hardware access when leaving
+            }
+        }
+
+        // Close All Apps & Revoke Camera Permission
+        function closeAllApps(stopCam = true) {
+            document.querySelectorAll('.app-window').forEach(win => win.classList.remove('active'));
+            if (stopCam) {
+                stopCamera();
+            }
+        }
+
+        // CAMERA HARDWARE FUNCTIONALITY
+        async function startCamera() {
+            const video = document.getElementById('webcam');
+            const indicator = document.getElementById('cameraIndicator');
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = mediaStream;
+                indicator.classList.add('active'); // Green Privacy Indicator Dot ON
+            } catch (err) {
+                alert("Kamera izni gerekli veya kamera bulunamadı: " + err.message);
+                indicator.classList.remove('active');
+            }
+        }
+
+        function stopCamera() {
+            const indicator = document.getElementById('cameraIndicator');
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop()); // STOP CAMERA STREAM (Revokes permission/turns off camera hardware)
+                mediaStream = null;
+            }
+            const video = document.getElementById('webcam');
+            if (video) video.srcObject = null;
+            indicator.classList.remove('active'); // Green Privacy Indicator Dot OFF
+        }
+
+        // Take Photo & Store in Photos App
+        function takePhoto() {
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('photoCanvas');
+            if (!mediaStream) return;
+
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageDataUrl = canvas.toDataURL('image/png');
+            photos.unshift(imageDataUrl);
+
+            // Update Gallery Preview Thumbnail
+            document.getElementById('camGalleryPreview').style.backgroundImage = `url('${imageDataUrl}')`;
+
+            // Render Photos Gallery
+            renderGallery();
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '';
+            photos.forEach(src => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.innerHTML = `<img src="${src}" />`;
+                grid.appendChild(item);
+            });
+        }
+
+        // SAFARI
+        function loadWebpage() {
+            let url = document.getElementById('safariUrl').value;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            document.getElementById('safariFrame').src = url;
+        }
+
+        // MESSAGES
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const chatBox = document.getElementById('chatBox');
+            if (!input.value.trim()) return;
+
+            const userMsg = document.createElement('div');
+            userMsg.className = 'bubble sent';
+            userMsg.textContent = input.value;
+            chatBox.appendChild(userMsg);
+
+            const replyMsg = document.createElement('div');
+            replyMsg.className = 'bubble received';
+            replyMsg.textContent = "Mesajın iletildi! 👍";
+            
+            setTimeout(() => {
+                chatBox.appendChild(replyMsg);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 800);
+
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // MUSIC
+        let isPlaying = false;
+        function togglePlay() {
+            const btn = document.getElementById('playBtn');
+            isPlaying = !isPlaying;
+            btn.textContent = isPlaying ? '⏸' : '▶';
+        }
+    </script>
+</body>
+</html>
+"""
+
+with open("iphone_custom_simulation.html", "w", encoding="utf-8") as f:
+    f.write(html_code)
