@@ -1,4 +1,4 @@
-html_code = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -527,7 +527,7 @@ html_code = """<!DOCTYPE html>
                 <!-- Status Bar -->
                 <div class="status-bar">
                     <span id="time">12:00</span>
-                    <span style="font-size: 12px; letter-spacing: 1px;">5G 🔋</span>
+                    <span style="font-size: 12px; letter-spacing: 1px;">Vodafone 5G 🔋</span>
                 </div>
 
                 <!-- Home Screen Content -->
@@ -628,7 +628,7 @@ html_code = """<!DOCTYPE html>
                     <div class="messages-app">
                         <h3 style="margin-bottom: 10px;">Mesajlar</h3>
                         <div class="chat-box" id="chatBox">
-                            <div class="bubble received">Merhaba Uras! iOS simülasyonuna hoş geldin.</div>
+                            <div class="bubble received">Merhaba Sen! iOS simülasyonuna hoş geldin.</div>
                         </div>
                         <div class="chat-input-area">
                             <input type="text" class="chat-input" id="chatInput" placeholder="Mesaj yazın...">
@@ -642,7 +642,7 @@ html_code = """<!DOCTYPE html>
                     <div class="music-app">
                         <div class="album-art">🎧</div>
                         <h2>Çalan Şarkı</h2>
-                        <p style="color: #aaa; margin-top: 5px;">Sanal Çalma Listesi</p>
+                        <p style="color: #aaa; margin-top: 5px;">Sanal Çalma Listesi(Çalışmıyor Yakında!)</p>
                         <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
                     </div>
                 </div>
@@ -792,7 +792,7 @@ html_code = """<!DOCTYPE html>
 
             const replyMsg = document.createElement('div');
             replyMsg.className = 'bubble received';
-            replyMsg.textContent = "Mesajın iletildi! 👍";
+            replyMsg.textContent = "Mesajın iletildi! (Sanal Mesaj) 👍";
             
             setTimeout(() => {
                 chatBox.appendChild(replyMsg);
@@ -815,5 +815,3 @@ html_code = """<!DOCTYPE html>
 </html>
 """
 
-with open("iphone_custom_simulation.html", "w", encoding="utf-8") as f:
-    f.write(html_code)
