@@ -536,7 +536,7 @@
                     <div class="app-grid">
                         <div class="app-icon" onclick="openApp('messages')">
                             <div class="icon-box">📞</div>
-                            <span class="app-name">Telefon(Bunada Girme Rezil Olurum :P)</span>
+                            <span class="app-name">Telefon</span>
                         </div>
                         <div class="app-icon" onclick="openApp('messages')">
                             <div class="icon-box">💬</div>
@@ -553,19 +553,19 @@
 
                         <div class="app-icon" onclick="openApp('messages')">
                             <div class="icon-box">✉️</div>
-                            <span class="app-name">Mail</span>
+                            <span class="app-name">Gmail</span>
                         </div>
                         <div class="app-icon" onclick="openApp('music')">
                             <div class="icon-box">🎵</div>
-                            <span class="app-name">Müzik(Gir Bak Mesaja)</span>
+                            <span class="app-name">Müzik</span>
                         </div>
                         <div class="app-icon" onclick="openApp('maps')">
                             <div class="icon-box">🗺️</div>
-                            <span class="app-name">Haritalar(OpenstreetMap)</span>
+                            <span class="app-name">Haritalar</span>
                         </div>
                         <div class="app-icon" onclick="openApp('safari')">
-                            <div class="icon-box">⚙️(🌐)</div>
-                            <span class="app-name">Ayarlar(Girme Rezil Olurum)</span>
+                            <div class="icon-box">⚙️</div>
+                            <span class="app-name">Ayarlar</span>
                         </div>
                     </div>
 
@@ -616,7 +616,7 @@
                 <div class="app-window" id="app-safari">
                     <div class="safari-app">
                         <div class="safari-bar">
-                            <input type="text" class="safari-input" id="safariUrl" value="https://wikipedia.org" placeholder="Web adresi girin...">
+                            <input type="text" class="safari-input" id="safariUrl" value="https://wikipedia.org" placeholder="Web adresi girin...(Tabii ifaremi güvenlik duvarı engelleme varsa)">
                             <button onclick="loadWebpage()" style="padding: 0 10px; border-radius: 8px; border:none; background:#007aff; color:#fff;">Git</button>
                         </div>
                         <iframe class="safari-content" id="safariFrame" src="https://wikipedia.org"></iframe>
@@ -792,7 +792,7 @@
 
             const replyMsg = document.createElement('div');
             replyMsg.className = 'bubble received';
-            replyMsg.textContent = "Mesajın iletildi! (Sanal Mesaj) 👍";
+            replyMsg.textContent = "Mesajın iletildi! (Sanal Mesaj Ve İfareme güvenlik engelleyici indir) 👍";
             
             setTimeout(() => {
                 chatBox.appendChild(replyMsg);
